@@ -2,7 +2,7 @@
 
 How much big flexible (curtailable) load, such as data centers, can ERCOT (the Texas grid) absorb at a given yearly curtailment rate, and how does that compare with how much big load wants to connect? And for one flexible site of a given size, how much of the year does it get switched off?
 
-Live app: `https://ercot-flexible-headroom-gn9szbrkv9qlykezovsb2b.streamlit.app/`
+Live app: https://ercot-flexible-headroom-gn9szbrkv9qlykezovsb2b.streamlit.app/
 
 ## Method
 
