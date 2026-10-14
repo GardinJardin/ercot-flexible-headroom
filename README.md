@@ -15,7 +15,7 @@ Live app: `<link coming>`
 
 - **Averaged weather.** The forecast averages 17 past weather years, so peaks are milder than any real year and there are no extreme events. Curtailment numbers are floors.
 - **Hour order is not real.** Monthly load is laid onto 2008's calendar pattern, so yearly totals hold but specific dates, hours and run lengths of curtailment do not.
-- **The grid is one point.** Room is checked ERCOT-wide; local transmission limits are not modeled.
+- **The grid is one point.** Room is checked ERCOT-wide; local transmission limits are not modeled, and new transmission is assumed to keep up with new plants.
 - **Evening capacity is probably overstated.** The summer peak was served at 6 pm with solar still producing, but the cap is applied to every hour, including after sunset.
 - **Includes EIA model-built additions.** Future capacity uses EIA's projected (not yet real) plants as well as announced projects; a real-projects-only switch exists as a check.
 - **Site queue order is assumed.** The single site sits behind every contracted load and ahead of every officer-letter load. How ERCOT orders curtailment under Texas SB 6 is unverified.
