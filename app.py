@@ -79,7 +79,14 @@ cm = c2.number_input("Month", 1, 12, 7, step=1)
 ch = c3.number_input("Hour-ending", 1, 24, 17, step=1)
 st.metric("Grid capacity (MW)", f"{capacity(int(cy), int(cm), int(ch)):,.0f}")
 summer_cap, winter_cap = load_caps()
-st.markdown(f"""
+# Small collapsed "Details" header (only this expander, via its container key); the text inside keeps its normal size
+st.markdown("""<style>
+.st-key-cap_details summary { padding-top: 0.2rem; padding-bottom: 0.2rem; min-height: 0; }
+.st-key-cap_details summary p { font-size: 0.8rem; }
+</style>""", unsafe_allow_html=True)
+with st.container(key="cap_details"):
+    with st.expander("Details", expanded=False):
+        st.markdown(f"""
 - Valid years are 2025-2050 for capacity; demand data covers 2025-2044.
 - Hour-ending 17 means 4-5 pm Texas time.
 - Capacity = the highest demand ERCOT actually served (summer cap {summer_cap:,.0f} MW for Apr-Oct, winter cap {winter_cap:,.0f} MW for Nov-Mar),
@@ -88,6 +95,7 @@ st.markdown(f"""
 - Assumptions: REAL_ONLY = {REAL_ONLY} (False = includes EIA model-built plants, not just planned ones); the grid is treated as
   one point (no transmission limits); after-sunset summer capacity is probably overstated.
 """)
+
 
 # ---- 3. Flexible headroom ----
 st.header("Flexible headroom")
@@ -135,6 +143,7 @@ with st.expander("Documentation: Flexible headroom", expanded=False):
 - If normal demand alone exceeds capacity in enough hours, headroom is 0. Each such hour is 1/8,760 of the year.
 - "Big load wants in" is ERCOT's forecast of new large loads: signed contracts plus officer letters (unsigned requests a utility executive has vouched for). ERCOT already discounts these for estimated drop-outs and adds a 180-day delay. We keep those discounts as they are.
 - "Big load wants in" is all of that load. "Headroom" is how much of it could connect as flexible load. The gap between them is load that would need new plants or lines, or a higher curtailment rate.
+- This section and "One flexible site" answer different scenarios: here, contracts and officer letters together are the flexible pool; there, contracts are firm and officer letters are left out. Don't compare their numbers directly.
 
 **Demand caveats**
 - Averaged weather: the forecast averages 17 past weather years (2008-2024), so there are no heat domes or winter storms like Uri 2021. Headroom is optimistic; real headroom in a bad-weather year is lower.
@@ -155,6 +164,7 @@ with st.expander("Documentation: Flexible headroom", expanded=False):
 - Gas, coal and nuclear count at full summer size every hour; breakdowns and cold-weather losses are ignored.
 - Batteries are credited by ERCOT's 2-hour ELCC (the share of battery size counted on at peak), a conservative choice. They barely affect the result.
 - The whole grid is treated as one point. Local power-line limits are not modeled, so a site can be blocked locally even when the state as a whole has room.
+- Transmission growth isn't accounted for, and transmission is not modeled as a constraint: so far, "capacity" only looks at generation capacity. Every new plant counts toward capacity everywhere in ERCOT from the year it's added, which assumes the lines to carry its power get built in time. New wind and solar are mostly in West Texas and are already curtailed when lines out of the region are full. Planned line projects (e.g. ERCOT's Permian Basin 765 kV plan) aren't modeled either. Headroom from the 2030s onward is probably overstated.
 
 **Reading the numbers**
 - Use yearly totals, not hourly details. The forecast lays each month's load onto 2008's calendar, so the order of hours isn't real. There's no answer to "when" or "for how many hours in a row", based on the data currently used.
@@ -194,12 +204,14 @@ with st.expander("Documentation: One flexible site", expanded=False):
     st.markdown("""
 **What it calculates**
 - One site of the size you set connects as flexible load and wants its full size every hour.
+- The site is new load, added on top of ERCOT's forecast. It can't be one of the projects the forecast already counts, or that load would be counted twice.
 - Who's ahead in line: normal customers and big loads with signed contracts come first and are never cut. Officer-letter loads aren't included, meaning your added site is assumed to come before them.
 - Each hour: switched off = normal demand + contracted loads + your site - capacity, kept between 0 and your site's size.
 - Curtailment rate = total switched off over the year / (site size x hours in the year).
 - Columns: "Hours cut" counts hours with any cut. "Hours fully off" counts hours where the whole site is off. "Max MW cut" is the largest single-hour cut. "Total MWh cut" is the year's switched-off energy. "Contracted big load average" is context only.
 
 **Caveats specific to the site**
+- Different scenario from "Flexible headroom": contracts are firm and officer letters are left out here, while headroom treats both together as flexible. Don't compare their numbers directly.
 - The order in line is assumed. How ERCOT actually orders curtailment among flexible loads under SB 6 has not been checked. If the site is also behind officer-letter loads, its cuts are much higher.
 - Contracted loads are never cut, even in hours when demand alone exceeds capacity. The site absorbs the whole shortage.
 - Mostly all-or-nothing: when the grid is short, it's usually short by far more than the site, so most cut hours are full switch-offs (2028: 346 of 358 at 100 MW).
@@ -210,6 +222,7 @@ with st.expander("Documentation: One flexible site", expanded=False):
 - Use yearly totals only. The hour order isn't real, so there's no longest switch-off or time-of-day pattern, based on the data currently used.
 - The numbers include plants EIA's model expects to be built. With announced plants only, the 100 MW site is cut 32.8% of 2030 instead of 18.3%, and about 99% of hours from 2035.
 - Capacity starts from the record peaks. Evening capacity is probably overstated, the grid is treated as one point, and gas, coal and nuclear count at full size every hour.
+- Transmission isn't modeled, as a constraint or as growth: every new plant counts everywhere in ERCOT from the year it's added, so cuts from the 2030s onward are probably understated.
 - Big loads are likely undercounted from about 2030. No climate trend and no efficiency gains.
 - 2032 spikes because of EIA's planned coal and gas retirements that year.
 """)
@@ -219,7 +232,8 @@ with st.expander("Caveats", expanded=True):
     st.markdown("""
 - Averaged weather: every cut is a floor and every headroom number is optimistic.
 - The numbers include EIA model-built plant additions, not just announced plants.
-- The grid is treated as one point; local power-line limits are not modeled.
+- The grid is treated as one point: local power-line limits are not modeled, and new transmission is assumed to keep up with new plants.
+- Not modeled yet: power prices or the dollar value of flexibility, the actual SB 6 curtailment rules (triggers, notice, limits on how long or how often a site is cut), locations below the whole state, and a reserve margin.
 
 Full details are in each section's Documentation.
 """)
