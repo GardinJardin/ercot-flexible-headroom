@@ -15,6 +15,23 @@ from erco_capacity import TEXAS, REAL_ONLY, capacity, load_caps  # noqa: E402  (
 
 st.set_page_config(page_title="ERCOT flexible-load headroom", layout="wide")
 
+# Cyan text on dark red; theme colors are in .streamlit/config.toml. Fonts: VT323 (a TV on-screen-display font, as in
+# felixrieseberg.com's labels) is the theme font, so it covers titles, widgets, the table and charts. Prose (st.write and
+# st.markdown text, incl. inside the expanders), captions and the metrics are Fira Sans instead; chart x-axis years are
+# set to Fira Sans in year_chart. Sizes and widths stay Streamlit's defaults (the deployed app's sizing).
+# Cyan shades: titles/values #6ff2f5 (theme text), body #a9eef0 (softer), captions and labels #7fc9cc (muted).
+st.markdown("""<style>
+@import url("https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap");
+.stApp h1, .stApp h2 { letter-spacing: 0.04em; }
+[data-testid="stMarkdown"] *, [data-testid="stCaptionContainer"] *, [data-testid="stMetric"] *:not([data-testid="stIconMaterial"]) {
+  font-family: "Fira Sans", sans-serif; }
+[data-testid="stMarkdown"] p, [data-testid="stMarkdown"] li { color: #a9eef0; }
+[data-testid="stCaptionContainer"] p { color: #7fc9cc; }
+[data-testid="stWidgetLabel"] p, [data-testid="stExpander"] summary p {
+  letter-spacing: 0.07em; text-transform: uppercase; color: #7fc9cc; }
+[data-testid="stExpander"] details { background: #43171a; border-color: #5e2a28; }
+</style>""", unsafe_allow_html=True)
+
 
 @st.cache_data(show_spinner=False)
 def build():
@@ -41,7 +58,7 @@ def build():
 with st.spinner("Building the hourly forecast and capacity table (first load takes a while)..."):
     data = build()
 
-st.title("ERCOT flexible-load headroom")
+st.title("ERCOT Flexible-Load Headroom")
 st.write("How much big flexible (curtailable) load can ERCOT absorb at a given curtailment rate, compared with how much big "
          "load wants in? And how much does one flexible site get switched off?")
 
@@ -54,7 +71,8 @@ def year_chart(df, cols, colors, y_title):
     wide = df[["Year"] + cols].copy()
     wide["Year"] = wide["Year"].astype(str)
     long = wide.melt(id_vars="Year", value_vars=cols, var_name="Series", value_name="Value")
-    x = alt.X("Year:O", title="Years", axis=alt.Axis(labelAngle=0))
+    # Year labels in Fira Sans; the rest of the chart uses the theme font (VT323)
+    x = alt.X("Year:O", title="Years", axis=alt.Axis(labelAngle=0, labelFont="Fira Sans"))
     lines = alt.Chart(long).mark_line(point=True).encode(
         x=x, y=alt.Y("Value:Q", title=y_title),
         color=alt.Color("Series:N", scale=alt.Scale(domain=cols, range=colors), legend=alt.Legend(orient="bottom", title=None)))
@@ -72,7 +90,7 @@ def highlight(row):
 
 
 # ---- 2. Grid capacity lookup ----
-st.header("Grid capacity lookup")
+st.header("Grid Capacity Lookup")
 c1, c2, c3 = st.columns(3)
 cy = c1.number_input("Year", 2025, 2050, 2030, step=1)
 cm = c2.number_input("Month", 1, 12, 7, step=1)
@@ -98,7 +116,7 @@ with st.container(key="cap_details"):
 
 
 # ---- 3. Flexible headroom ----
-st.header("Flexible headroom")
+st.header("Flexible Headroom")
 st.caption("*How much big flexible load the ERCOT grid can take, if that load obeys the set curtailment rate. The light blue line "
          "represents headroom over time at that specific curtailment rate: essentially how much power it gets if it agrees to a "
          "specific curtailment rate. The dark blue line represents how much big load ERCOT's forecast says wants to connect.*")
@@ -131,7 +149,7 @@ hcol = f"Headroom at {rate_pct:g}% (GW)"
 r = head[head["Year"] == sel_year].iloc[0]
 st.metric(f"{sel_year}: big flexible load that fits at {rate_pct:g}% curtailment",
           f"{r[hcol]:.2f} GW fits, {r['Big load average (GW)']:.1f} GW wants in")
-st.altair_chart(year_chart(head, [hcol, "Big load average (GW)"], ["#83c9ff", "#0068c9"], "GW"), use_container_width=True)
+st.altair_chart(year_chart(head, [hcol, "Big load average (GW)"], ["#ff9b8f", "#ff3b30"], "GW"), use_container_width=True)
 st.dataframe(head.style.apply(highlight, axis=1).format(
     {"Year": "{:d}", "Hours over capacity": "{:,d}", hcol: "{:.2f}",
      "Big load average (GW)": "{:.1f}", "Big load peak (GW)": "{:.1f}"}), hide_index=True)
@@ -172,7 +190,7 @@ with st.expander("Documentation: Flexible headroom", expanded=False):
 """)
 
 # ---- 4. One flexible site ----
-st.header("One flexible site")
+st.header("One Flexible Site")
 st.caption("*The share of your site's power that gets switched off each year: its curtailment rate.*")
 SITE_MW = st.number_input("Site size (MW)", min_value=1, max_value=5000, value=100, step=1)
 
@@ -194,7 +212,7 @@ site = pd.DataFrame(srows)
 r = site[site["Year"] == sel_year].iloc[0]
 st.metric(f"{sel_year}: {SITE_MW} MW site curtailment rate",
           f"{r['Curtailment rate (%)']:.3f}%, {int(r['Hours cut']):,} hours cut")
-st.altair_chart(year_chart(site, ["Curtailment rate (%)"], ["#0068c9"], "% of the year"), use_container_width=True)
+st.altair_chart(year_chart(site, ["Curtailment rate (%)"], ["#ff3b30"], "% of the year"), use_container_width=True)
 st.dataframe(site.style.apply(highlight, axis=1).format(
     {"Year": "{:d}", "Hours cut": "{:,d}", "Hours fully off": "{:,d}", "Max MW cut": "{:.1f}",
      "Total MWh cut": "{:,d}", "Curtailment rate (%)": "{:.3f}",

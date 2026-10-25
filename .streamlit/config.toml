@@ -1,0 +1,13 @@
+[theme]
+# Cyan lettering on its complementary color (red, hue ~5 vs cyan ~185), kept very dark so the text reads clearly.
+# Fonts: VT323 everywhere (prose, captions and metrics switch to Fira Sans in app.py), Fira Code for code
+base = "dark"
+primaryColor = "#29e0e8"
+backgroundColor = "#2b0d0b"
+secondaryBackgroundColor = "#43171a"
+textColor = "#6ff2f5"
+borderColor = "#5e2a28"
+baseRadius = "small"
+font = "VT323:https://fonts.googleapis.com/css2?family=VT323&display=swap"
+headingFont = "VT323:https://fonts.googleapis.com/css2?family=VT323&display=swap"
+codeFont = "Fira Code:https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap"
